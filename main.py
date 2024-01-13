@@ -19,7 +19,7 @@ async def setup_hook():
             print(f"Skipped loading Cog. ({filename[:-3]})")
 
 @client.command()
-async def sync(ctx, *, guild: int = None):
+async def sync(ctx, *, guild: int):
     synced = await client.tree.sync()
     await ctx.reply(f'Successfully synced {len(synced)} slash command(s).')
 
