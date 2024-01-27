@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ext.commands import context
 from discord.ext.commands import has_guild_permissions, MissingPermissions, Group, has_permissions, bot_has_permissions, BotMissingPermissions
 from discord import Member, app_commands, TextChannel
 import asyncio
@@ -19,7 +20,7 @@ class utility(commands.Cog):
     async def ping(self, ctx):
         await ctx.reply(f"Pong! bot latency: {round(self.client.latency * 1000)}ms.")
 
-    @commands.hybrid_command(name="avatar", description="Get the avatar of a user")
+    @commands.hybrid_command(name="avatar", description="Get the avatar of a user", aliases=["pfp", "useravatar", "profilepicture", "profilepic"])
     @app_commands.describe(user="The avatar of what user?")
     async def avatar(self, ctx,  user: Optional[Member] = None):
         user = ctx.author if user is None else user
@@ -30,7 +31,7 @@ class utility(commands.Cog):
         embed.set_image(url=user.avatar.url)
         await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(name="banner", description="Get the banner of a user.")
+    @commands.hybrid_command(name="banner", description="Get the banner of a user.", aliases=["userbanner"])
     @app_commands.describe(user="The banner of what user?")
     async def banner(self, ctx, user: Member = None):
         user = ctx.author if not user else user
@@ -45,7 +46,7 @@ class utility(commands.Cog):
         elif not fetched_user.banner:
             await ctx.reply(f"The specified user `{user}` does not have a banner set or could not be found.")
 
-    @commands.hybrid_command(name='coinflip', description="Flip a coin!")
+    @commands.hybrid_command(name='coinflip', description="Flip a coin!", aliases=["flipacoin", "coin"])
     async def coinflip(self, ctx):
         string_list = ["heads", "tails"]
         embed = discord.Embed(
@@ -63,6 +64,28 @@ class utility(commands.Cog):
             await message.add_reaction(emoji)
             await self.client.process_commands(message)
 
+    @commands.hybrid_group(name="help", with_app_command=True)
+    async def help(self, ctx):
+        embed = discord.Embed(
+            title="Available commands.",
+            description="Use /help moderation, /help utility or /help bot to get more specific information."
+        )
+        embed.add_field(name="Moderation commands:", value="`-Kick` Kicks a member from the guild. \n `-ban` Bans a member from the guild. \n `-purge` Quickly removes up to 99 messages. \n ", inline=False)
+        embed.add_field(name="Utility commands:", value="`-userinfo` Get information about the specified user. \n`-avatar` Get the specified user's avatar. \n `-banner` Get the specified user's banner. \n `-serverinfo` Get information about the server. \n `-about` Get information about the bot and the bot's team. \n `-invite` Invite the bot to your server!. \n `-ping` Get the bot's latency.", inline=False)
+        embed.add_field(name="Fun commands:", value="`-dadjoke` Get a random dad joke \n ")
+        await ctx.reply(embed=embed)
+    
+    @help.command()
+    async def moderation(self, ctx):
+        embed = discord.Embed(
+            title="Moderation commands.",
+            color=0x00A8FB,
+        )
+        embed.add_field(name="`kick`", value="Kick a member from the guild, Use: `-kick @member reason`", inline=False)
+        embed.add_field(name="ban", value="Bans a user from the guild,")
+        await ctx.reply(embed=embed)
+
+
     @commands.hybrid_command(name='dadjoke', description="Get a dadjoke!")
     async def dadjoke(self, ctx):
         limit = 2
@@ -76,8 +99,50 @@ class utility(commands.Cog):
         else:
             await ctx.reply(f"There was an error... {response.status_code}, {response.text}")
 
-    @commands.hybrid_command(name="serverinfo", description="Gives information about the current server.")
+    @commands.hybrid_command(name="roleinfo", description="Gives information about the specified role!")
+    @bot_has_permissions(manage_roles=True)
+    @has_permissions(manage_roles=True)
+    @app_commands.describe(role="Information about what role do you want to get?")
+    async def roleinfo(self, ctx, role: discord.Role):
+        await ctx.defer()
+        embed = discord.Embed(
+            title="Role information",
+            color=role.color
+        )
+        embed.add_field(name="Role:", value=role.mention, inline=False)
+        embed.add_field(name="Name:", value=role.name, inline=False)
+        embed.add_field(name="ID:", value=f"`{role.id}`", inline=False)
+        embed.add_field(name="Color:", value=role.color, inline=False)
+        embed.add_field(name="Members", value=len(role.members), inline=False)
+        embed.add_field(name="Created at:", value=f"<t:{int(role.created_at.timestamp())}:F> (<t:{int(role.created_at.timestamp())}:R>)", inline=False)
+        embed.add_field(name="Hoisted", value=role.hoist, inline=False)
+        embed.add_field(name="Position:", value=role.position, inline=False)
+        if role.icon:
+            embed.set_image(url=role.icon.url)
+        await ctx.reply(embed=embed)
+
+    @roleinfo.error
+    async def userinfo_error(self, ctx, error ):
+        if isinstance(error, BotMissingPermissions):
+            embed = discord.Embed(
+                title="Insufficient bot permissions.",
+                description="The bot needs to have `MANAGE_ROLES` permission for this command to work.",
+                color=discord.Color.orange()
+            )
+            embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+            await ctx.reply(embed=embed)
+        elif isinstance(error, MissingPermissions):
+            embed = discord.Embed(
+                title="Insufficient permissions.",
+                description="You need to have `MANAGE_ROLES` permission to be able to use this command.",
+                color=0x00A8FB
+            )
+            embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+            await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(name="serverinfo", description="Gives information about the current server.", aliases=["guildinfo"])
     async def serverinfo(self, ctx):
+        await ctx.defer()
         embed = discord.Embed(
             title=f'Info for {ctx.guild.name}',
             color=0x00A8FB
@@ -94,12 +159,78 @@ class utility(commands.Cog):
 
     @commands.hybrid_command(name="membercount", description="Get the member count of this server.")
     async def membercount(self, ctx):
+        await ctx.defer()
         embed = discord.Embed(
             title=f'Member count for {ctx.guild.name}',
             description=f'**Members** {ctx.guild.member_count}',
             color=0x00A8FB
         )
         await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(name="userinfo", description="Get information about a user.")
+    @app_commands.describe(user="Information about what user?")
+    async def userinfo(self, ctx, user: Member = None):
+        await ctx.defer()
+        user = ctx.author if not user else user
+        fetched_user = await self.client.fetch_user(user.id)
+        embed = discord.Embed(
+            title=f"Information for {user.name}",
+            color=0x00A8FB
+        )
+        embed.add_field(name="User:", value=f"{user.name} ({user.mention})", inline=False)
+        embed.add_field(name="User ID:", value=user.id, inline=False)
+        embed.add_field(name="Bot?", value=user.bot, inline=False)
+        embed.add_field(name="Created at:", value=f'<t:{int(user.created_at.timestamp())}:F> (<t:{int(user.created_at.timestamp())}:R>)', inline=False)
+        if user in ctx.guild.members:
+            embed.add_field(name="Joined at:", value=f"<t:{int(user.joined_at.timestamp())}:F> (<t:{int(user.joined_at.timestamp())}:R>)", inline=False)
+        embed.set_image(url=user.avatar.url)
+        if fetched_user.banner:
+            embed.set_thumbnail(url=fetched_user.banner.url)
+        await ctx.reply(embed=embed)
+
+    @userinfo.error
+    async def userinfo_error(self, ctx, error):
+        if isinstance(error, commands.MemberNotFound):
+            await ctx.reply("User could not be found.")
+
+    @commands.hybrid_command(name="about", description="Get information about the bot!")
+    async def about(self, ctx):
+        await ctx.defer()
+        embed = discord.Embed(
+            title='Bot information.',
+            color=0x00A8FB
+        )
+        embed.add_field(name="Development:", value="[kiki124](https://kiki124.vercel.app)")
+        embed.add_field(name="Server:", value="https://discord.gg/zkbPFwwzVJ")
+        embed.add_field(name="Bot's github repository:", value="https://github.com/kiki0124/discord_bot")
+        embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+        await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(name="invite", description="Invite the bot to your server!")
+    async def invite(self, ctx):
+        await ctx.defer()
+        embed = discord.Embed(
+            title=f"Invite the bot to your server!",
+            description="Use [this link](https://discord.com/api/oauth2/authorize?client_id=1149388511590486057&permissions=8&scope=bot)",
+            color=0x00A8FB
+        )
+        embed.set_footer(text=ctx.user.name, icon_url=ctx.author.avatar.url)
+        await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(name="poll", description="Send a poll using the bot!")
+    async def poll(self, ctx, question: str):
+        await ctx.defer()
+        embed = discord.Embed(
+            title=f" New poll!",
+            description=question,
+            color=0x00A8FB
+        )
+        embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
+        message = await ctx.reply(embed=embed)
+        yes_emoji = "<:Yes:1087612813700239360>"
+        no_emoji = "<:No:1087612645995204648>"
+        await message.add_reaction(yes_emoji)
+        await message.add_reaction(no_emoji)
 
 async def setup(client):
   await client.add_cog(utility(client))
