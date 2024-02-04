@@ -217,7 +217,7 @@ class utility(commands.Cog):
         embed.set_footer(text=ctx.user.name, icon_url=ctx.author.avatar.url)
         await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(name="poll", description="Send a poll using the bot!")
+        @commands.hybrid_command(name="poll", description="Send a poll using the bot!")
     async def poll(self, ctx, question: str):
         await ctx.defer()
         embed = discord.Embed(
@@ -231,6 +231,63 @@ class utility(commands.Cog):
         no_emoji = "<:No:1087612645995204648>"
         await message.add_reaction(yes_emoji)
         await message.add_reaction(no_emoji)
+
+    @commands.hybrid_group(name="afk", with_app_command=True)
+    async def afk(self, ctx):
+        
+        if ctx.author.id in afk_dict:
+            afk_dict.pop(ctx.author.id)
+            embed = discord.Embed(
+                title="AFK title removed.",
+                description="Successfully removed your afk status. Use.",
+                color=0x00A8FB
+            )
+            embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+            await ctx.reply(embed=embed)
+        elif ctx.author.id not in afk_dict:
+            afk_dict[ctx.author.id] = round(str(ctx.created_at.timestamp()))
+            embed = discord.Embed(
+                title="Successfully updated AFK status.",
+                description=f"You were marked as AFK starting <t:{round(ctx.message.created_at.timestamp())}:R> (<t:{timestamp_unix}:f>).",
+                color=0x00A8FB
+            )
+            embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+            await ctx.reply(embed=embed)
+    
+    @afk.command(name="set", description="Set a custom AFK status.")
+    async def set(self, ctx):
+        if ctx.author.id in afk_dict:
+            await ctx.reply("You are already afk...")
+        elif ctx.author.id not in afk_dict:
+            afk_dict[ctx.author.id] = round(ctx.message.created_at.timestamp())
+            await ctx.reply("You are afk!")
+    
+    @afk.command(name="remove", description="Remove your AFK status.")
+    async def remove(self, ctx):
+        if ctx.author.id in afk_dict:
+            afk_dict.pop(ctx.author.id)
+            await ctx.reply("Successfully removed your custom afk status.")
+        elif ctx.author.id not in afk_dict:
+            await ctx.reply("You are not currently afk...")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot == False:
+            if not message.content.startswith("-"):
+                if message.author.id in afk_dict:
+                    afk_dict.pop(message.author.id)
+                    await message.reply("You are no longer AFK!")
+                elif message.mentions:
+                    for User in message.mentions:
+                        if User.id in afk_dict:
+                            await message.reply(f"{User.name} is currently AFK since <t:{afk_dict[User.id]}:R> (<t:{afk_dict[User.id]}:f>)")
+                        else:
+                            return
+            elif message.content.startswith('-'):
+                return
+        elif message.author.bot == True:
+            return
+        await self.client.process_commands(message)
 
 async def setup(client):
   await client.add_cog(utility(client))
