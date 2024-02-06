@@ -233,74 +233,46 @@ class utility(commands.Cog):
         await message.add_reaction(no_emoji)
 
     @commands.hybrid_group(name="afk", with_app_command=True)
-    async def afk(self, ctx):
-        
-        if ctx.author.id in afk_dict:
-            afk_dict.pop(ctx.author.id)
+    async def afk(self, ctx: commands.Context):
+        await ctx.reply(f"Wrong command... Use </afk set:1201855045721661500> or </afk remove:1201855045721661500>.")
+    
+    @afk.command(name="set", description="Set a custom AFK status.")
+    @app_commands.describe(status="What do you want your custom status to be?")
+    async def set(self, ctx: commands.Context, status: str):
+        if ctx.author.id not in afk_dict:
+            data = {"status": status, "timestamp": round(ctx.message.created_at.timestamp())}
+            afk_dict[ctx.author.id] = data
             embed = discord.Embed(
-                title="AFK title removed.",
-                description="Successfully removed your afk status. Use.",
+                title="AFK status saved!",
+                description=f"Successfully saved your custom AFK status as `{status}`",
                 color=0x00A8FB
             )
             embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
             await ctx.reply(embed=embed)
-        elif ctx.author.id not in afk_dict:
-             data = {"status": status, "timestamp": round(ctx.message.created_at.timestamp())}
-            afk_dict[ctx.author.id] = data
-            embed = discord.Embed(
-                timestamp="AFK status saved!",
-                description=f"Successfully saved your custom AFK status as `{status}`",
-                color=0x00A8FB
-        )
-        embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
-        await ctx.reply(embed=embed)
-    
-    @afk.command(name="set", description="Set a custom AFK status.")
-    async def set(self, ctx: commands.Context, status: str):
-        data = {"status": status, "timestamp": round(ctx.message.created_at.timestamp())}
-        afk_dict[ctx.author.id] = data
-        embed = discord.Embed(
-            timestamp="AFK status saved!",
-            description=f"Successfully saved your custom AFK status as `{status}`",
-            color=0x00A8FB
-        )
-        embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
-        await ctx.reply(embed=embed)
+        elif ctx.author.id in afk_dict:
+            await ctx.reply("You are already AFK... Use </afk remove:1201855045721661500> to remove your AFK status.")
     
     @afk.command(name="remove", description="Remove your AFK status.")
-    async def remove(self, ctx):
+    async def remove(self, ctx: commands.Context):
         if ctx.author.id in afk_dict:
             afk_dict.pop(ctx.author.id)
             await ctx.reply("Successfully removed your custom afk status.")
         elif ctx.author.id not in afk_dict:
             await ctx.reply("You are not currently afk...")
 
-   @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    @commands.Cog.listener()
+    async def on_message(self, message):
         if message.author.bot == False:
             if not message.content.startswith("-"):
                 if message.author.id in afk_dict:
                     afk_dict.pop(message.author.id)
-                    embed = discord.Embed(
-                        title="Welcome back!",
-                        description=f"Welcome back {message.author.mention}! I have removed your AFK status.",
-                        color=0x00A8FB
-                    )
-                    embed.set_footer(text=message.author.name, icon_url=message.author.avatar.url)
-                    await message.reply(embed=embed)
+                    await message.reply("You are no longer AFK!")
                 elif message.mentions:
-                    for user in message.mentions:
-                        if user.id in afk_dict:
-                            timestamp = afk_dict[user.id]["timestamp"]
-                            status = afk_dict[user.id]["status"]
-                            embed = discord.Embed(
-                                title=f"{user.name} is currently AFK.",
-                                description=f"{user.mention} is AFK since <t:{timestamp}:R> (<t:{timestamp}:f>).",
-                                color=0x00A8FB
-                            )
-                            embed.set_footer(text=message.author.name, icon_url=message.author.avatar.url)
-                            embed.add_field(name="Status:", value=f"`{status}`", inline=False)
-                            await message.reply(embed=embed)
+                    for User in message.mentions:
+                        if User.id in afk_dict:
+                            timestamp = afk_dict[User.id]["timestamp"]
+                            status = afk_dict[User.id]["status"]
+                            await message.reply(f"{User.name} is AFK since <t:{timestamp}:R> (<t:{timestamp}:f>) with the status `{status}`")
                         else:
                             return
             elif message.content.startswith('-'):
