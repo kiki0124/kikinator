@@ -245,22 +245,27 @@ class utility(commands.Cog):
             embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
             await ctx.reply(embed=embed)
         elif ctx.author.id not in afk_dict:
-            afk_dict[ctx.author.id] = round(str(ctx.created_at.timestamp()))
+             data = {"status": status, "timestamp": round(ctx.message.created_at.timestamp())}
+            afk_dict[ctx.author.id] = data
             embed = discord.Embed(
-                title="Successfully updated AFK status.",
-                description=f"You were marked as AFK starting <t:{round(ctx.message.created_at.timestamp())}:R> (<t:{timestamp_unix}:f>).",
+                timestamp="AFK status saved!",
+                description=f"Successfully saved your custom AFK status as `{status}`",
                 color=0x00A8FB
-            )
-            embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
-            await ctx.reply(embed=embed)
+        )
+        embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+        await ctx.reply(embed=embed)
     
     @afk.command(name="set", description="Set a custom AFK status.")
-    async def set(self, ctx):
-        if ctx.author.id in afk_dict:
-            await ctx.reply("You are already afk...")
-        elif ctx.author.id not in afk_dict:
-            afk_dict[ctx.author.id] = round(ctx.message.created_at.timestamp())
-            await ctx.reply("You are afk!")
+    async def set(self, ctx: commands.Context, status: str):
+        data = {"status": status, "timestamp": round(ctx.message.created_at.timestamp())}
+        afk_dict[ctx.author.id] = data
+        embed = discord.Embed(
+            timestamp="AFK status saved!",
+            description=f"Successfully saved your custom AFK status as `{status}`",
+            color=0x00A8FB
+        )
+        embed.set_footer(text=ctx.author.name, icon_url=ctx.author.avatar.url)
+        await ctx.reply(embed=embed)
     
     @afk.command(name="remove", description="Remove your AFK status.")
     async def remove(self, ctx):
@@ -270,17 +275,32 @@ class utility(commands.Cog):
         elif ctx.author.id not in afk_dict:
             await ctx.reply("You are not currently afk...")
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
+   @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
         if message.author.bot == False:
             if not message.content.startswith("-"):
                 if message.author.id in afk_dict:
                     afk_dict.pop(message.author.id)
-                    await message.reply("You are no longer AFK!")
+                    embed = discord.Embed(
+                        title="Welcome back!",
+                        description=f"Welcome back {message.author.mention}! I have removed your AFK status.",
+                        color=0x00A8FB
+                    )
+                    embed.set_footer(text=message.author.name, icon_url=message.author.avatar.url)
+                    await message.reply(embed=embed)
                 elif message.mentions:
-                    for User in message.mentions:
-                        if User.id in afk_dict:
-                            await message.reply(f"{User.name} is currently AFK since <t:{afk_dict[User.id]}:R> (<t:{afk_dict[User.id]}:f>)")
+                    for user in message.mentions:
+                        if user.id in afk_dict:
+                            timestamp = afk_dict[user.id]["timestamp"]
+                            status = afk_dict[user.id]["status"]
+                            embed = discord.Embed(
+                                title=f"{user.name} is currently AFK.",
+                                description=f"{user.mention} is AFK since <t:{timestamp}:R> (<t:{timestamp}:f>).",
+                                color=0x00A8FB
+                            )
+                            embed.set_footer(text=message.author.name, icon_url=message.author.avatar.url)
+                            embed.add_field(name="Status:", value=f"`{status}`", inline=False)
+                            await message.reply(embed=embed)
                         else:
                             return
             elif message.content.startswith('-'):
@@ -288,6 +308,6 @@ class utility(commands.Cog):
         elif message.author.bot == True:
             return
         await self.client.process_commands(message)
-
+        
 async def setup(client):
   await client.add_cog(utility(client))
