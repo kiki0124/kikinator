@@ -272,7 +272,17 @@ class utility(commands.Cog):
                         if User.id in afk_dict:
                             timestamp = afk_dict[User.id]["timestamp"]
                             status = afk_dict[User.id]["status"]
-                            await message.reply(f"{User.name} is AFK since <t:{timestamp}:R> (<t:{timestamp}:f>) with the status `{status}`")
+                            nickname = User.nick
+                            if not User.nick:
+                                nickname = User.name
+                            embed = discord.Embed(
+                                title=f"User is currently AFK.",
+                                description=f"[{nickname}](https://discordapp.com/users/{User.id}) is AFK since <t:{timestamp}:R> (<t:{timestamp}:f>).",
+                                color=0x00A8FB
+                            )
+                            embed.set_footer(text=message.author.name, icon_url=message.author.avatar.url)
+                            embed.add_field(name="Status:", value=status, inline=False)
+                            await message.reply(embed=embed)
                         else:
                             return
             elif message.content.startswith('-'):
