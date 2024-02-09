@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import context
-from discord.ext.commands import has_guild_permissions, MissingPermissions, Group, has_permissions, bot_has_permissions, BotMissingPermissions
+from discord.ext.commands import MissingPermissions, Group, has_permissions, bot_has_permissions, BotMissingPermissions
 from discord import Member, app_commands, TextChannel
 import asyncio
 import re
