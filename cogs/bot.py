@@ -12,7 +12,7 @@ class BugReportModal(ui.Modal, title="Bug report."):
     actual_results = ui.TextInput(label='Actual results:', required=True, style=discord.TextStyle.long, placeholder="The bot sends the info message and immediately deletes it.")
     other_info = ui.TextInput(label="Any additional information you would like to add?", required=False, style=discord.TextStyle.long)
     async def on_submit(self, interaction: Interaction):
-        webhook = Webhook.from_url(client=self.client, url='https://discord.com/api/webhooks/1191831095445045489/TBu5Io4ZUL4_6f4L5XEhBHt2K194oy7MTlOqWASJ2vhnn_tTFRDYFl2Dz4ctsidjC0x7')
+        webhook = Webhook.from_url(client=self.client, url='')
         embed = discord.Embed(
             title="New bug report.",
             color=discord.Color.orange()
