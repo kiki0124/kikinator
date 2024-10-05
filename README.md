@@ -1,3 +1,7 @@
+# __Quick note__
+This repository is now *archived* as I *do not* plan on updating it (its been over 6 months since the last commit) or changing anything in it.
+It will still remain public if anyone wants to use it as a reference for discord.py, Python, or anything else.
+
 # discord_bot
 A discord bot made using discord.py for my discord server.
 
